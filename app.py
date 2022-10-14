@@ -9,7 +9,7 @@ from aiohttp import web
 
 from sqlalchemy.orm import declarative_base, Session, relationship, scoped_session
 
-from model import PathInfo, BaseClass, PathInfoEntry, LocalJSONEncoder, SerializationMode
+from model import BaseClass, LocalJSONEncoder, SerializationMode
 from db import db_engine
 
 logging.basicConfig()

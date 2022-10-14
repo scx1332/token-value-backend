@@ -13,26 +13,22 @@ class SerializationMode(Enum):
     MINIMAL = 2
 
 
-class PathInfo(BaseClass):
-    __tablename__ = "path_info"
+class TokenERC20Entry(BaseClass):
+    __tablename__ = "token_erc20_entry"
     id = Column(Integer, primary_key=True)
-    path = Column(String, nullable=False)
-
-
-class PathInfoEntry(BaseClass):
-    __tablename__ = "path_info_entry"
-    id = Column(Integer, primary_key=True)
-    path_info = Column(Integer, ForeignKey("path_info.id"), nullable=False)
-    files_checked = Column(Integer, nullable=False)
-    files_failed = Column(Integer, nullable=False)
-    total_size = Column(Integer, nullable=False)
+    address = Column(String, nullable=False)
+    token = Column(String, nullable=False)
+    block_start = Column(Integer, nullable=False)
+    block_num = Column(Integer, nullable=False)
+    block_every = Column(Integer, nullable=False)
+    data = Column(String, nullable=False)
 
     def to_json(self, mode=SerializationMode.FULL):
         if mode == SerializationMode.FULL:
             return {c.name: getattr(self, c.name) for c in self.__table__.columns}
         elif mode == SerializationMode.MINIMAL:
             return {
-                "total_size": self.total_size
+                "block_every": self.block_every
             }
         else:
             raise Exception(f"Unknown mode {mode}")
