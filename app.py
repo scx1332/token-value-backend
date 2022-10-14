@@ -25,14 +25,13 @@ parser.set_defaults(dumpjournal=True)
 
 args = parser.parse_args()
 
-
 routes = web.RouteTableDef()
+
 
 @routes.get('/')
 async def hello(request):
     print("test")
     return web.Response(text="Hello, world")
-
 
 
 @routes.get('/htmltest')
@@ -44,32 +43,38 @@ POLYGON_USD_TOKEN = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
 CHECK_USD_HOLDER = "0xe7804c37c13166ff0b37f5ae0bb07a3aebb6e245"
 
 
-@routes.get('/sizes')
-async def sizes(request):
+@routes.get('/history/{min_block}/{max_block}')
+async def history(request):
     # with Session(db_engine) as session:
     #     res = session.query(PathInfoEntry).all()
     p = batch_rpc_provider.BatchRpcProvider("https://polygon-rpc.com", 100)
 
-    min_block = 30000000
-    max_block = 30000010
-    every_block = 1
+    min_block = int(request.match_info['min_block'])
+    max_block = int(request.match_info['max_block'])
+    every_block = 100
     blocks = []
     block_no = min_block
+    max_blocks = 100
     while block_no < max_block:
+        if len(blocks) >= max_blocks:
+            break
         blocks.append(f"0x{block_no:x}")
         block_no += every_block
 
     balances = await p.get_erc20_balance_history(CHECK_USD_HOLDER, POLYGON_USD_TOKEN, blocks)
 
-    return web.json_response(balances, dumps=json.dumps)
+    new_dict = {}
+    for balance in balances:
+        for k, v in zip(blocks, balances):
+            if v == "0x":
+                v = 0
+            else:
+                v = int(v, 0)
+            new_dict[int(k, 0)] = v
 
+    # print(res)
 
-    #resp = app.response_class(
-    #    response=json.dumps(res, cls=LocalJSONEncoder, mode=SerializationMode.FULL),
-    #    status=200,
-    #    mimetype='application/json'
-    #)
-    #return resp
+    return web.json_response(new_dict, dumps=json.dumps)
 
 
 async def main():
@@ -78,6 +83,7 @@ async def main():
         web._run_app(app, handle_signals=False)  # noqa
     )
     await task
+
 
 if __name__ == "__main__":
     app = web.Application()
