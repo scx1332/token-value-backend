@@ -34,16 +34,12 @@ async def hello(request):
     return web.Response(text="Hello, world")
 
 
-@routes.get('/htmltest')
-def htmltest():
-    return render_template('plot.html', sizes_url="http://51.38.53.113:5000/sizes")
-
 
 POLYGON_USD_TOKEN = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
 CHECK_USD_HOLDER = "0xe7804c37c13166ff0b37f5ae0bb07a3aebb6e245"
 
 
-@routes.get('/history/{min_block}/{max_block}')
+@routes.get('/history/{min_block}/{max_block}/{every_block}/{holder}/{token}')
 async def history(request):
     # with Session(db_engine) as session:
     #     res = session.query(PathInfoEntry).all()
@@ -51,7 +47,10 @@ async def history(request):
 
     min_block = int(request.match_info['min_block'])
     max_block = int(request.match_info['max_block'])
-    every_block = 100
+    every_block = int(request.match_info['every_block'])
+    token = request.match_info['token']
+    address = request.match_info['holder']
+
     blocks = []
     block_no = min_block
     max_blocks = 100
@@ -61,7 +60,8 @@ async def history(request):
         blocks.append(f"0x{block_no:x}")
         block_no += every_block
 
-    balances = await p.get_erc20_balance_history(CHECK_USD_HOLDER, POLYGON_USD_TOKEN, blocks)
+    balances = await p.get_erc20_balance_history(address, token, blocks)
+    # balances = [await p.get_erc20_balance(address, token)]
 
     new_dict = {}
     for balance in balances:
