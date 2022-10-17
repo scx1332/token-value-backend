@@ -1,18 +1,21 @@
 import asyncio
 import json
 import platform
+from datetime import datetime
 
 import batch_rpc_provider
 from aiohttp import web
 from sqlalchemy.future import select
 
 import db
+import fill_blocks
 import model
-from model import TokenERC20Entry
+from model import TokenERC20Entry, BlockInfo
 from db import db_engine
 from sqlalchemy import create_engine
 import batch_rpc_provider
 from itertools import groupby
+
 
 def encode_list(s_list):
     return [[len(list(group)), key] for key, group in groupby(s_list)]
@@ -22,10 +25,10 @@ async def find_token_erc20(address, token, block_start, block_every):
     async with db.async_session() as session:
         result = await session.execute(
             select(TokenERC20Entry)
-            .filter(TokenERC20Entry.address == address)
-            .filter(TokenERC20Entry.token == token)
-            .filter(TokenERC20Entry.block_start == block_start)
-            .filter(TokenERC20Entry.block_every == block_every)
+                .filter(TokenERC20Entry.address == address)
+                .filter(TokenERC20Entry.token == token)
+                .filter(TokenERC20Entry.block_start == block_start)
+                .filter(TokenERC20Entry.block_every == block_every)
         )
 
         return result.scalars().first()
@@ -64,14 +67,16 @@ async def main():
 
     async with db.async_session() as session:
         session.add(token_erc20_entry)
-        #result = await session.execute(
+        # result = await session.execute(
         #    insert(model.DaoRequest).values(req)
-        #)
+        # )
         await session.commit()
+
+
 
 
 
 if __name__ == "__main__":
     if platform.system() == "Windows":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    asyncio.run(main())
+    asyncio.run(fill_blocks.fill_blocks())

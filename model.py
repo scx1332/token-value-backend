@@ -1,7 +1,7 @@
 import json
 from enum import Enum
 
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String, DateTime
 from sqlalchemy.orm import declarative_base
 
 
@@ -11,6 +11,22 @@ BaseClass = declarative_base()
 class SerializationMode(Enum):
     FULL = 1
     MINIMAL = 2
+
+
+class ChainInfo(BaseClass):
+    __tablename__ = "chain_info"
+    chain_id = Column(Integer, unique=True, primary_key=True)
+    name = Column(String, nullable=False)
+
+
+class BlockInfo(BaseClass):
+    __tablename__ = "block_info"
+    id = Column(Integer, primary_key=True)
+    chain_id = Column(Integer, ForeignKey("chain_info.chain_id"), nullable=False)
+    block_number = Column(Integer, nullable=False)
+    block_hash = Column(String, nullable=False)
+    block_timestamp = Column(DateTime, nullable=False)
+    number_of_transactions = Column(Integer, nullable=False)
 
 
 class TokenERC20Entry(BaseClass):
