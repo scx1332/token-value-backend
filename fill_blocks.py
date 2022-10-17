@@ -6,6 +6,7 @@ from sqlalchemy.future import select
 
 import db
 import model
+import config
 from model import BlockInfo, ChainInfo, BlockDate
 
 from datetime import date, datetime, timedelta
@@ -127,9 +128,9 @@ async def fill_blocks_loop():
         except Exception as e:
             print(f"Error: {e}")
 
-        secs = 5
+        secs = 0
         print(f"Loop finished, sleeping for {secs} seconds")
-        await fill_block_dates()
+        # await fill_block_dates()
         await asyncio.sleep(secs)
 
 async def main():
