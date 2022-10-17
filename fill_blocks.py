@@ -22,29 +22,46 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 async def fill_blocks():
-    p = batch_rpc_provider.BatchRpcProvider(config.POLYGON_PROVIDER_URL, 100)
+    p = batch_rpc_provider.BatchRpcProvider(config.ETHEREUM_PROVIDER_URL, 100)
 
+
+    chains = [{
+        "chain_id": 137,
+        "name": "Polygon",
+    },
+    {
+        "chain_id": 56,
+        "name": "Binance Smart Chain",
+    },
+    {
+        "chain_id": 1,
+        "name": "Ethereum",
+    }
+    ]
 
     async with db.async_session() as session:
-        result = await session.execute(
-            select(ChainInfo)
-                .filter(ChainInfo.chain_id == 137)
-        )
-        if result.scalars().first() is None:
-            ci = ChainInfo()
-            ci.chain_id = 137
-            ci.name = "Polygon"
-            session.add(ci)
-            await session.commit()
+        for chain in chains:
+            result = await session.execute(
+                select(ChainInfo)
+                    .filter(ChainInfo.chain_id == chain["chain_id"])
+            )
+            if result.scalars().first() is None:
+                ci = ChainInfo()
+                ci.chain_id = chain["chain_id"]
+                ci.name = chain["name"]
+                session.add(ci)
+                await session.commit()
 
 
+
+    chain_id = await p.get_chain_id()
 
     latest_block = await p.get_latest_block()
 
     async with db.async_session() as session:
         result = await session.execute(
             select(BlockInfo)
-                .filter(BlockInfo.chain_id == 137)
+                .filter(BlockInfo.chain_id == chain_id)
         )
         list = result.scalars()
 
@@ -70,7 +87,7 @@ async def fill_blocks():
         async with db.async_session() as session:
             for block in blocks:
                 block_info = BlockInfo()
-                block_info.chain_id = 137
+                block_info.chain_id = chain_id
                 block_info.block_number = int(block["number"], 0)
                 block_info.block_hash = block["hash"]
                 block_info.block_timestamp = datetime.fromtimestamp(int(block["timestamp"], 0))
