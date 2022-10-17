@@ -7,6 +7,7 @@ import batch_rpc_provider
 from aiohttp import web
 from sqlalchemy.future import select
 
+import config
 import db
 import fill_blocks
 import model
@@ -36,7 +37,7 @@ async def find_token_erc20(address, token, block_start, block_every):
 
 async def main():
     model.BaseClass.metadata.create_all(db_engine)
-    p = batch_rpc_provider.BatchRpcProvider("https://polygon-rpc.com", 100)
+    p = batch_rpc_provider.BatchRpcProvider(config.POLYGON_PROVIDER_URL, 100)
     min_block = 30000000
     max_block = 30000010
     every_block = 1

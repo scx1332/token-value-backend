@@ -9,6 +9,7 @@ from aiohttp import web
 
 from sqlalchemy.orm import declarative_base, Session, relationship, scoped_session
 
+import config
 from model import BaseClass, LocalJSONEncoder, SerializationMode
 from db import db_engine
 
@@ -43,7 +44,7 @@ CHECK_USD_HOLDER = "0xe7804c37c13166ff0b37f5ae0bb07a3aebb6e245"
 async def history(request):
     # with Session(db_engine) as session:
     #     res = session.query(PathInfoEntry).all()
-    p = batch_rpc_provider.BatchRpcProvider("https://polygon-rpc.com", 100)
+    p = batch_rpc_provider.BatchRpcProvider(config.POLYGON_PROVIDER_URL, 100)
 
     min_block = int(request.match_info['min_block'])
     max_block = int(request.match_info['max_block'])

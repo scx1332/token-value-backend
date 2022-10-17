@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 async def fill_blocks():
-    p = batch_rpc_provider.BatchRpcProvider("https://polygon-rpc.com", 100)
+    p = batch_rpc_provider.BatchRpcProvider(config.POLYGON_PROVIDER_URL, 100)
 
 
     async with db.async_session() as session:
