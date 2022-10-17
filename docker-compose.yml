@@ -1,0 +1,42 @@
+services:
+  token_backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - MONITOR_DB_ENGINE=${MONITOR_DB_ENGINE}
+    command: python fill_blocks.py
+    restart: unless-stopped
+    ports:
+      - "${TOKEN_VALUE_BACKEND_PORT}:8545"    
+  postgres:
+    image: postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - "${PGADMIN_PORT}:80"
+    links:
+      - postgres
+    depends_on:
+      - postgres
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+      - PGADMIN_CONFIG_MAX_LOGIN_ATTEMPTS=500
+      - SCRIPT_NAME=${PGADMIN_BASE_URL}
+    volumes:
+      - ./pgadmin:/var/lib/pgadmin
+    restart: unless-stopped
+    
+      

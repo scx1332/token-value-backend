@@ -1,7 +1,8 @@
 import json
 from enum import Enum
 
-from sqlalchemy import Column, ForeignKey, Integer, String, DateTime
+from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, UniqueConstraint, PrimaryKeyConstraint, \
+    ForeignKeyConstraint
 from sqlalchemy.orm import declarative_base
 
 
@@ -19,14 +20,36 @@ class ChainInfo(BaseClass):
     name = Column(String, nullable=False)
 
 
+class BlockDate(BaseClass):
+    __tablename__ = "block_date"
+    __table_args__ = (
+        # this can be db.PrimaryKeyConstraint if you want it to be a primary key
+        PrimaryKeyConstraint('chain_id', 'base_date'),
+        ForeignKeyConstraint(
+            ["block_number", "chain_id"],
+            ["block_info.block_number", "block_info.chain_id"],
+            onupdate="CASCADE",
+            ondelete="SET NULL",
+        )
+    )
+    chain_id = Column(Integer, ForeignKey("chain_info.chain_id"), nullable=False)
+    base_date = Column(DateTime, nullable=False, index=True)
+    block_number = Column(Integer, nullable=False)
+    block_date = Column(DateTime, nullable=False)
+
+
 class BlockInfo(BaseClass):
     __tablename__ = "block_info"
-    id = Column(Integer, primary_key=True)
+    __table_args__ = (
+        # this can be db.PrimaryKeyConstraint if you want it to be a primary key
+        PrimaryKeyConstraint('chain_id', 'block_number'),
+    )
+
     chain_id = Column(Integer, ForeignKey("chain_info.chain_id"), nullable=False)
-    block_number = Column(Integer, nullable=False)
+    block_number = Column(Integer, index=True, nullable=False)
     block_hash = Column(String, nullable=False)
-    block_timestamp = Column(DateTime, nullable=False)
-    number_of_transactions = Column(Integer, nullable=False)
+    block_timestamp = Column(DateTime, index=True, nullable=False)
+    number_of_transactions = Column(Integer, index=True, nullable=False)
 
 
 class TokenERC20Entry(BaseClass):

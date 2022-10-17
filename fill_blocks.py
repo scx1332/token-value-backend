@@ -6,14 +6,21 @@ from sqlalchemy.future import select
 
 import db
 import model
-from model import BlockInfo, ChainInfo
+from model import BlockInfo, ChainInfo, BlockDate
+
+from datetime import date, datetime, timedelta
+
+def datespan(startDate, endDate, delta=timedelta(days=1)):
+    currentDate = startDate
+    while currentDate > endDate:
+        yield currentDate
+        currentDate -= delta
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 async def fill_blocks():
-    model.BaseClass.metadata.create_all(db.db_engine)
     p = batch_rpc_provider.BatchRpcProvider("https://polygon-rpc.com", 100)
 
 
@@ -73,6 +80,46 @@ async def fill_blocks():
         print(f"Error: {e}")
 
 
+async def fill_block_dates():
+    chain_id = 137
+    ct = datetime.now()
+    start_time = datetime(ct.year, ct.month, ct.day, ct.hour, ct.minute)
+    end_time = start_time - timedelta(days=1)
+
+    for day in datespan(start_time, end_time, delta=timedelta(minutes=1)):
+        async with db.async_session() as session:
+            result = await session.execute(
+                select(BlockDate)
+                    .filter(BlockDate.base_date == day)
+                    .filter(BlockDate.chain_id == chain_id)
+            )
+            if result.scalars().first():
+                print(f"Skipping {day}")
+                continue
+
+            result = await session.execute(
+                select(BlockInfo)
+                    .filter(BlockInfo.block_timestamp > day - timedelta(minutes=1))
+                    .filter(BlockInfo.block_timestamp <= day)
+                    .order_by(BlockInfo.block_timestamp.asc())
+            )
+            list = result.scalars()
+            last = None
+            for l in list:
+                last = l
+            if last:
+                print(f"Last block for {day} is {last.block_timestamp}")
+                bd = BlockDate()
+                bd.chain_id = chain_id
+                bd.base_date = day
+                bd.block_number = last.block_number
+                bd.block_date = last.block_timestamp
+                session.add(bd)
+                await session.commit()
+
+
+
+
 async def fill_blocks_loop():
     while True:
         try:
@@ -82,9 +129,14 @@ async def fill_blocks_loop():
 
         secs = 5
         print(f"Loop finished, sleeping for {secs} seconds")
+        await fill_block_dates()
         await asyncio.sleep(secs)
 
+async def main():
+    model.BaseClass.metadata.create_all(db.db_engine)
+    await fill_blocks_loop()
 
 if __name__ == "__main__":
     import asyncio
-    asyncio.run(fill_blocks_loop())
+
+    asyncio.run(main())
