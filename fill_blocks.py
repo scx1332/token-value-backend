@@ -103,7 +103,7 @@ async def fill_blocks(blocks_at_once=10000):
 async def fill_blocks_loop():
     while True:
         try:
-            await fill_blocks()
+            await fill_blocks(config.FILL_BLOCKS_AT_ONCE)
         except Exception as e:
             print(f"Error: {e}")
 

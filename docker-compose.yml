@@ -10,6 +10,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - MONITOR_DB_ENGINE=${MONITOR_DB_ENGINE}
       - POLYGON_PROVIDER_URL=${POLYGON_PROVIDER_URL}
+      - FILL_BLOCKS_AT_ONCE=${FILL_BLOCKS_AT_ONCE}
     command: python fill_blocks.py
     restart: unless-stopped
     ports:
