@@ -11,19 +11,13 @@ from model import BlockInfo, ChainInfo, BlockDate
 
 from datetime import date, datetime, timedelta
 
-def datespan(startDate, endDate, delta=timedelta(days=1)):
-    currentDate = startDate
-    while currentDate > endDate:
-        yield currentDate
-        currentDate -= delta
-
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-async def fill_blocks():
-    p = batch_rpc_provider.BatchRpcProvider(config.ETHEREUM_PROVIDER_URL, 100)
 
+async def fill_blocks():
+    p = batch_rpc_provider.BatchRpcProvider(config.POLYGON_PROVIDER_URL, 100)
 
     chains = [{
         "chain_id": 137,
@@ -96,45 +90,6 @@ async def fill_blocks():
             await session.commit()
     except Exception as e:
         print(f"Error: {e}")
-
-
-async def fill_block_dates():
-    chain_id = 137
-    ct = datetime.now()
-    start_time = datetime(ct.year, ct.month, ct.day, ct.hour, ct.minute)
-    end_time = start_time - timedelta(days=1)
-
-    for day in datespan(start_time, end_time, delta=timedelta(minutes=1)):
-        async with db.async_session() as session:
-            result = await session.execute(
-                select(BlockDate)
-                    .filter(BlockDate.base_date == day)
-                    .filter(BlockDate.chain_id == chain_id)
-            )
-            if result.scalars().first():
-                print(f"Skipping {day}")
-                continue
-
-            result = await session.execute(
-                select(BlockInfo)
-                    .filter(BlockInfo.block_timestamp > day - timedelta(minutes=1))
-                    .filter(BlockInfo.block_timestamp <= day)
-                    .order_by(BlockInfo.block_timestamp.asc())
-            )
-            list = result.scalars()
-            last = None
-            for l in list:
-                last = l
-            if last:
-                print(f"Last block for {day} is {last.block_timestamp}")
-                bd = BlockDate()
-                bd.chain_id = chain_id
-                bd.base_date = day
-                bd.block_number = last.block_number
-                bd.block_date = last.block_timestamp
-                session.add(bd)
-                await session.commit()
-
 
 
 
