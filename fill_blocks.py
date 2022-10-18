@@ -58,14 +58,10 @@ async def fill_blocks(blocks_at_once=10000):
 
     async with db.async_session() as session:
         result = await session.execute(
-            select(BlockInfo)
+            select(BlockInfo.block_number)
                 .filter(BlockInfo.chain_id == chain_id)
         )
-        list = result.scalars()
-
-    blocks_in_db = set()
-    for block in list:
-        blocks_in_db.add(block.block_number)
+        blocks_in_db = set(result.scalars().all())
 
     logger.info(f"Got {len(blocks_in_db)} from db...")
 
