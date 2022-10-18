@@ -1,10 +1,48 @@
 from sqlalchemy.future import select
 
 import db
-from model import BlockInfo
+from model import BlockInfo, BlockDate
+from sqlalchemy.sql import func
+
+async def db_get_minute_series(chain_id, start_date, end_date):
+    async with db.async_session() as session:
+        result = await session.execute(
+            select(BlockDate)
+                .filter(BlockDate.chain_id == chain_id)
+                .filter(BlockDate.base_date >= start_date)
+                .filter(BlockDate.base_date <= end_date)
+                .order_by(BlockDate.block_number)
+        )
+        return result.scalars().all()
 
 
-async def db_get_block(chain_id=None, latest=False, oldest=False) -> BlockInfo:
+async def db_get_hours_series(chain_id, start_date, end_date):
+    async with db.async_session() as session:
+        result = await session.execute(
+            select(BlockDate)
+                .filter(BlockDate.chain_id == chain_id)
+                .filter(BlockDate.base_date >= start_date)
+                .filter(BlockDate.base_date <= end_date)
+                .filter(BlockDate.base_minute == 0)
+                .order_by(BlockDate.block_number)
+        )
+        return result.scalars().all()
+
+
+async def db_get_day_series(chain_id, start_date, end_date):
+    async with db.async_session() as session:
+        result = await session.execute(
+            select(BlockDate)
+                .filter(BlockDate.chain_id == chain_id)
+                .filter(BlockDate.base_date >= start_date)
+                .filter(BlockDate.base_date <= end_date)
+                .filter(BlockDate.base_minute == 0)
+                .order_by(BlockDate.block_number)
+        )
+        return result.scalars().all()
+
+
+async def db_get_block(chain_id, latest=False, oldest=False) -> BlockInfo:
     if chain_id is None:
         raise Exception("chain_id is None")
     if latest and oldest:

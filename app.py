@@ -4,12 +4,15 @@ import os
 import shutil
 import argparse
 import logging
+from datetime import datetime, timedelta
+
 import batch_rpc_provider
 from aiohttp import web
 
 from sqlalchemy.orm import declarative_base, Session, relationship, scoped_session
 
 import config
+from db_queries import db_get_minute_series, db_get_hours_series
 from model import BaseClass, LocalJSONEncoder, SerializationMode
 from db import db_engine
 
@@ -38,6 +41,44 @@ async def hello(request):
 
 POLYGON_USD_TOKEN = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F"
 CHECK_USD_HOLDER = "0xe7804c37c13166ff0b37f5ae0bb07a3aebb6e245"
+
+@routes.get('/minutes')
+async def minutes(request):
+    current_date = datetime.now()
+    old_date = current_date - timedelta(days=1)
+    cd = await db_get_minute_series(chain_id=137, start_date=old_date, end_date=current_date)
+
+    res = json.dumps(cd, cls=LocalJSONEncoder, indent=4, mode=SerializationMode.FULL)
+    return web.json_response(text=res)
+
+
+@routes.get('/day/{holder}/{token}')
+async def day(request):
+    p = batch_rpc_provider.BatchRpcProvider(config.POLYGON_PROVIDER_URL, 100)
+
+    token = request.match_info['token']
+    address = request.match_info['holder']
+
+    current_date = datetime.now()
+    old_date = current_date - timedelta(days=1)
+    cd = await db_get_hours_series(chain_id=137, start_date=old_date, end_date=current_date)
+    blocks = [f"0x{x.block_number:x}" for x in cd]
+    balances = await p.get_erc20_balance_history(address, token, blocks)
+
+    # balances = [await p.get_erc20_balance(address, token)]
+    new_dict = {}
+    for balance in balances:
+        for k, v in zip(blocks, balances):
+            if v == "0x":
+                v = 0
+            else:
+                v = int(v, 0)
+            new_dict[int(k, 0)] = v
+
+    # print(res)
+
+    return web.json_response(new_dict, dumps=json.dumps)
+
 
 
 @routes.get('/history/{min_block}/{max_block}/{every_block}/{holder}/{token}')

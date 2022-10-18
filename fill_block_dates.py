@@ -43,21 +43,21 @@ async def fill_block_dates():
 
     print("Generating date span:" + str(start_time) + " - " + str(end_time))
 
-    for day in date_span_generator(start_time, end_time, delta=timedelta(minutes=1)):
+    for curr_dt in date_span_generator(start_time, end_time, delta=timedelta(minutes=1)):
         async with db.async_session() as session:
             result = await session.execute(
                 select(BlockDate)
-                    .filter(BlockDate.base_date == day)
+                    .filter(BlockDate.base_date == curr_dt)
                     .filter(BlockDate.chain_id == chain_id)
             )
             if result.scalars().first():
-                print(f"Skipping {day}")
+                print(f"Skipping {curr_dt}")
                 continue
 
             result = await session.execute(
                 select(BlockInfo)
-                    .filter(BlockInfo.block_timestamp > day - timedelta(minutes=1))
-                    .filter(BlockInfo.block_timestamp <= day)
+                    .filter(BlockInfo.block_timestamp > curr_dt - timedelta(minutes=1))
+                    .filter(BlockInfo.block_timestamp <= curr_dt)
                     .order_by(BlockInfo.block_timestamp.asc())
             )
             list = result.scalars()
@@ -65,12 +65,14 @@ async def fill_block_dates():
             for l in list:
                 last = l
             if last:
-                print(f"Last block for {day} is {last.block_timestamp}")
+                print(f"Last block for {curr_dt} is {last.block_timestamp}")
                 bd = BlockDate()
                 bd.chain_id = chain_id
-                bd.base_date = day
+                bd.base_date = curr_dt
                 bd.block_number = last.block_number
                 bd.block_date = last.block_timestamp
+                bd.base_minute = curr_dt.minute
+                bd.base_hour = curr_dt.hour
                 session.add(bd)
                 await session.commit()
 
