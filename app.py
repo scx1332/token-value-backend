@@ -1,7 +1,4 @@
-import asyncio
 import json
-import os
-import shutil
 import argparse
 import logging
 from datetime import datetime, timedelta
@@ -9,12 +6,9 @@ from datetime import datetime, timedelta
 import batch_rpc_provider
 from aiohttp import web
 
-from sqlalchemy.orm import declarative_base, Session, relationship, scoped_session
-
 import config
 from db_queries import db_get_minute_series, db_get_hours_series, db_get_day_series, db_get_block_series
-from model import BaseClass, LocalJSONEncoder, SerializationMode
-from db import db_engine
+from model import LocalJSONEncoder, SerializationMode
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
