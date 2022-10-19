@@ -136,14 +136,6 @@ async def history(request):
     return web.json_response(new_dict, dumps=json.dumps)
 
 
-async def main():
-    BaseClass.metadata.create_all(db_engine)
-    task = asyncio.create_task(
-        web._run_app(app, handle_signals=False)  # noqa
-    )
-    await task
-
-
 if __name__ == "__main__":
     app = web.Application()
     app.add_routes(routes)
