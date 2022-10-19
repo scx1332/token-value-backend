@@ -2,7 +2,6 @@ from sqlalchemy.future import select
 
 import db
 from model import BlockInfo, BlockDate
-from sqlalchemy.sql import func
 
 
 async def db_get_minute_series(chain_id, start_date, end_date):

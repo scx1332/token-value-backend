@@ -1,0 +1,3 @@
+[submodule "token-value-frontend"]
+	path = token-value-frontend
+	url = https://github.com/scx1332/token-value-frontend.git
