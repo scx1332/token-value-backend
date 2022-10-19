@@ -30,6 +30,20 @@ async def db_get_hours_series(chain_id, start_date, end_date):
         return result.scalars().all()
 
 
+#todo: make proper block series
+async def db_get_block_series(chain_id, start_date, end_date):
+    async with db.async_session() as session:
+        result = await session.execute(
+            select(BlockDate)
+                .filter(BlockDate.chain_id == chain_id)
+                .filter(BlockDate.base_date >= start_date)
+                .filter(BlockDate.base_date <= end_date)
+                .filter(BlockDate.base_minute == 0)
+                .order_by(BlockDate.block_number)
+        )
+        return result.scalars().all()
+
+
 async def db_get_day_series(chain_id, start_date, end_date):
     async with db.async_session() as session:
         result = await session.execute(

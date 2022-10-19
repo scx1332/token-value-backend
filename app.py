@@ -12,7 +12,7 @@ from aiohttp import web
 from sqlalchemy.orm import declarative_base, Session, relationship, scoped_session
 
 import config
-from db_queries import db_get_minute_series, db_get_hours_series
+from db_queries import db_get_minute_series, db_get_hours_series, db_get_day_series, db_get_block_series
 from model import BaseClass, LocalJSONEncoder, SerializationMode
 from db import db_engine
 
@@ -52,28 +52,45 @@ async def minutes(request):
     return web.json_response(text=res)
 
 
-@routes.get('/day/{holder}/{token}')
+@routes.get('/{time_diff}/{start_date}/{end_date}/{holder}/{token}')
 async def day(request):
     p = batch_rpc_provider.BatchRpcProvider(config.POLYGON_PROVIDER_URL, 100)
 
     token = request.match_info['token']
     address = request.match_info['holder']
+    time_diff = request.match_info['time_diff']
+    start_date = datetime.fromisoformat(request.match_info['start_date'])
+    end_date = datetime.fromisoformat(request.match_info['end_date'])
 
-    current_date = datetime.now()
-    old_date = current_date - timedelta(days=1)
-    cd = await db_get_hours_series(chain_id=137, start_date=old_date, end_date=current_date)
+    if time_diff == "hour":
+        cd = await db_get_hours_series(chain_id=137, start_date=start_date, end_date=end_date)
+    elif time_diff == "minute":
+        cd = await db_get_minute_series(chain_id=137, start_date=start_date, end_date=end_date)
+    elif time_diff == "day":
+        cd = await db_get_day_series(chain_id=137, start_date=start_date, end_date=end_date)
+    elif time_diff == "block":
+        cd = await db_get_block_series(chain_id=137, start_date=start_date, end_date=end_date)
+    else:
+        raise Exception("Unknown time_diff")
+
     blocks = [f"0x{x.block_number:x}" for x in cd]
+    if len(blocks) > 1000:
+        return web.json_response({"error": f"too many entries ({len(blocks)} vs max 1000)"}, dumps=json.dumps)
+
+    dates = [x.base_date for x in cd]
     balances = await p.get_erc20_balance_history(address, token, blocks)
 
     # balances = [await p.get_erc20_balance(address, token)]
     new_dict = {}
     for balance in balances:
-        for k, v in zip(blocks, balances):
+        for k, v, d in zip(blocks, balances, dates):
             if v == "0x":
                 v = 0
             else:
                 v = int(v, 0)
-            new_dict[int(k, 0)] = v
+
+            block = {"v": v, "d": d.isoformat()}
+            new_dict[int(k, 0)] = block
 
     # print(res)
 
