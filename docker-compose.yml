@@ -27,7 +27,7 @@ services:
     command: python app.py
     restart: unless-stopped
     ports:
-      - "${TOKEN_VALUE_BACKEND_PORT}:8545"    
+      - "${TOKEN_VALUE_BACKEND_PORT}:5000"    
   postgres:
     image: postgres
     environment:
