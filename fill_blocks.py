@@ -7,6 +7,8 @@ from sqlalchemy.future import select
 import db
 import model
 import config
+from db_setup import db_setup
+from fill_block_dates import fill_block_dates
 from model import BlockInfo, ChainInfo, BlockDate
 
 from datetime import date, datetime, timedelta
@@ -15,40 +17,11 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-logging.getLogger("batch_rpc_provider.batch_rpc_provider").setLevel(logging.WARNING)
 
-async def fill_blocks(blocks_at_once=10000):
-    p = batch_rpc_provider.BatchRpcProvider(config.POLYGON_PROVIDER_URL, 100)
+async def fill_blocks(p: batch_rpc_provider.BatchRpcProvider, blocks_at_once=10000):
     logger.info(f"Starting fill_blocks... with provider {config.POLYGON_PROVIDER_URL}")
 
-    chains = [{
-        "chain_id": 137,
-        "name": "Polygon",
-    },
-        {
-            "chain_id": 56,
-            "name": "Binance Smart Chain",
-        },
-        {
-            "chain_id": 1,
-            "name": "Ethereum",
-        }
-    ]
 
-    logger.info(f"Filling chain info data...")
-
-    async with db.async_session() as session:
-        for chain in chains:
-            result = await session.execute(
-                select(ChainInfo)
-                    .filter(ChainInfo.chain_id == chain["chain_id"])
-            )
-            if result.scalars().first() is None:
-                ci = ChainInfo()
-                ci.chain_id = chain["chain_id"]
-                ci.name = chain["name"]
-                session.add(ci)
-                await session.commit()
 
     chain_id = await p.get_chain_id()
 
@@ -107,14 +80,16 @@ async def fill_blocks_loop():
         except Exception as e:
             print(f"Error: {e}")
 
-        secs = 0
+        secs = 5
         print(f"Loop finished, sleeping for {secs} seconds")
         # await fill_block_dates()
         await asyncio.sleep(secs)
 
 
 async def main():
-    model.BaseClass.metadata.create_all(db.db_engine)
+    logging.getLogger("batch_rpc_provider.batch_rpc_provider").setLevel(logging.WARNING)
+
+    await db_setup()
     await fill_blocks_loop()
 
 
