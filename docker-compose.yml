@@ -28,6 +28,12 @@ services:
     restart: unless-stopped
     ports:
       - "${TOKEN_VALUE_BACKEND_PORT}:5000"    
+  frontend:
+    build:
+      context: token-value-frontend
+      dockerfile: Dockerfile    
+    ports:
+      - "${FRONTEND_PORT}:3000"      
   postgres:
     image: postgres
     environment:
